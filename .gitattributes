@@ -1,0 +1,3 @@
+# LF in every checkout, whatever core.autocrlf says. cmd scripts need CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf
