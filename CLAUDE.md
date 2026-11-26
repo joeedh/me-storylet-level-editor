@@ -56,8 +56,11 @@ Until each writer exists, `me-gamedata-export`'s builders do that job.
 There is no code yet, and the build setup isn't planned. Replace this section with
 build/test commands and an architecture overview once they exist.
 
-- **Current plan:** `docs/plans/2026-11-24-level-tool-visit-slice.md`, which covers
-  milestone 1 (LE3, read-only) and lists the later milestones.
+- **Current plan:** `docs/plans/2026-11-25-conversation-round-trip.md`, milestone 1: an
+  LE3 package read and write round trip ending in one unvoiced conversation. LE2 comes
+  next (the user's decisions, 2026-11-25).
+- **Later:** `docs/plans/2026-11-24-level-tool-visit-slice.md`, the read-only visit query,
+  and the other later milestones it lists.
 - **Layers planned:** `ue3` → `level` → `kismet` → `app` → CLI. `ue3` doesn't depend on
   coredcc.
 

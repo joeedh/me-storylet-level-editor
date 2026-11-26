@@ -1,6 +1,10 @@
-# Level tool, milestone 1: the LE3 visit slice
+# Level tool: the LE3 visit slice
 
-Status: pressure-tested and revised, 2026-11-24. No code exists.
+Status: pressure-tested and revised, 2026-11-24. No code exists. On 2026-11-25 the user
+made a package round trip ending in one unvoiced LE3 conversation milestone 1
+(`2026-11-25-conversation-round-trip.md`), with LE2 after it. This slice becomes a later
+milestone, not yet numbered. The review below predates both changes. "Milestone 1" below
+means this slice.
 
 Moved from `mass-effect-storylet-study` (below, "the study repo"; its `level-tool-plan`
 branch, `72b9577`) on 2026-11-25. Paths marked "study" are in that repo.
@@ -12,8 +16,9 @@ spatial questions. It is used by LLMs first, with no frontend, and later makes u
 edits. Milestone 1 is LE3 only and read-only, and answers one question: **for a given
 conversation start, where, when and how can it be triggered?**
 
-Study `docs/plans/2026-11-24-graph-export.md` defers this "model of visits". Today's
-exports say what plot logic does, but not where it is or when its sublevel is loaded.
+Study `docs/plans/2026-11-24-graph-compile.md` (named `graph-export` before study
+`802fd06`) defers this "model of visits". Today's exports say what plot logic does, but
+not where it is or when its sublevel is loaded.
 
 ## Decided by the user
 
@@ -24,21 +29,58 @@ exports say what plot logic does, but not where it is or when its sublevel is lo
 - Kismet edits belong to this tool, in milestone 2.
 - coredcc stays out of this milestone's main path. A side test of how it fits UE3 data
   follows step 1, and the first edits bring it in.
-- This slice is the first milestone. Build setup isn't planned yet.
+- This slice was the first milestone, until 2026-11-25 (below). Build setup isn't planned
+  yet.
 - The tool lives in its own repo, this one.
 - Edits (milestone 2) come before spatial work (milestone 3). Walkable reachability is in
   milestone 3.
 
-## Ownership (proposed, except Kismet edits)
+### Scope, 2026-11-25
 
-| Area                                                            | Owner                                   |
-| --------------------------------------------------------------- | --------------------------------------- |
-| Level sets, streaming, actors, triggers, spatial                | this tool                               |
-| Kismet edits, and later geometry, lighting and actor edits      | this tool                               |
-| Conversation starts, splices and node Kismet                    | LEC builder now; this tool once matched |
-| Conditionals, transitions, TLK, Coalesced, conversation content | `me-gamedata-export` and the study repo |
-| Meaning of plot logic, order rules, gate walks                  | the study repo (`src/meplot/gates.ts`)  |
-| Packaging, TOC and installing                                   | ME3Tweaks Mod Manager                   |
+The user's decisions, made in the study repo's session and recorded in `CLAUDE.md`
+(`5514c0e`) and in study `docs/plans/2026-11-24-graph-compile.md` (`1c68a7f`, then named
+`graph-export`).
+
+- This tool handles writing mods: conversation authoring, Kismet edits, conditionals
+  (LE3's `.cnd`, and LE1's and LE2's compiled UnrealScript), transitions, TLK strings, a
+  mod's Coalesced file and package building.
+- The MVP for conversations is custom unvoiced ones. Advanced dialogue and cinematic
+  sequences are later work.
+- The goal is large narrative changes, such as Shepard being indoctrinated at the start
+  of ME2: tools to write, analyse and validate storylets, plus basic level edits.
+- `me-gamedata-export` keeps the JSON export and the inspection commands. Its builders are
+  interim, and each is retired once this tool replaces it: `add-conversation`,
+  `write-transitions`, `override-transitions`, `add-strings`, `add-emails` and
+  `compile --write-cnd`. No new builder work is done in C#.
+- coredcc has what this tool needs now, so the fit test doesn't hold up designing the
+  first writer.
+- UDK is installed at `C:\UDK\UDK-2015-01`, for the UnrealScript tooling.
+- Milestone 1 is a package read and write round trip, ending in one unvoiced LE3
+  conversation. LE2 comes straight after it.
+- An override of a base-game LE1 or LE2 conditional ships as `.pmu` text, which Mod
+  Manager compiles.
+- "The tooling" for UnrealScript means UDK.
+- **Order of work** (study `docs/plans/2026-11-10-in-game-storylets.md`, `802fd06`):
+    - this tool: the conversation round trip, then the LE2 conversation route;
+    - `me-gamedata-export` reads conversation start kinds, `PlotStreaming` and streaming
+      states, then text, speakers and the dialogue wheel;
+    - this tool checks its own reader against those exports instead of rebuilding them.
+      So the visit query below isn't built from scratch; what is left of this slice is
+      that check, and whatever the exports can't answer.
+
+## Ownership (proposed, except where decided above)
+
+| Area                                                             | Owner                                  |
+| ---------------------------------------------------------------- | -------------------------------------- |
+| Reading start kinds, `PlotStreaming`, streaming states           | `me-gamedata-export`; checked here     |
+| Level sets, actors, triggers, spatial                            | this tool                              |
+| Kismet edits, and later geometry, lighting and actor edits       | this tool                              |
+| Writing conversations, their starts, splices and node Kismet     | this tool; LEC builder until replaced  |
+| Writing conditionals, transitions, TLK, Coalesced and packages   | this tool; LEC builders until replaced |
+| Reading conditionals, transitions, TLK, Coalesced, conversations | `me-gamedata-export`                   |
+| Storylets, change sets, and compiling them to edit requests      | the study repo                         |
+| Meaning of plot logic, order rules, gate walks                   | the study repo (`src/meplot/gates.ts`) |
+| TOC and installing                                               | ME3Tweaks Mod Manager                  |
 
 ## Facts about LE3 (2026-11-24)
 
@@ -131,7 +173,7 @@ Marked **R** when only the reviewer measured it.
   and an object reference. Set one value in memory through a command, undo it, and compare
   with the original. Nothing is written to disk.
 - **Result:** what fits, what doesn't, the cost per class, and what would have to change
-  in coredcc or here. Recorded in this plan before milestone 2 is planned.
+  in coredcc or here. Recorded in this plan, but no writer's design waits for it.
 - Nothing in steps 2-10 waits for it or links coredcc.
 
 ## Done when
@@ -164,6 +206,65 @@ plan.
 - **3, spatial:** collision geometry, spatial queries, walkable floors, reachability,
   floor maps and placement queries, checked in game.
 - **4, new content:** geometry, lighting and whole levels, and LE1 and LE2.
+
+Superseded on 2026-11-25: milestone 1 is now the conversation round trip and LE2 follows
+it. Where this slice, edits and spatial work go after that isn't decided.
+
+## Open questions
+
+For the user. The first three come from the cross-plan review, as suggestions. It is
+recorded in full under "Review" in the graph export plan. Milestone 1's scope and the
+place of LE2 were decided on 2026-11-25 (above).
+
+- **One writer per package per build,** so that LEC's serialiser and this one never write
+  the same level in turn. The study's review counts this as resolved by the ownership
+  decision, but the two can still meet while the LEC builders are in use.
+- **The edit request:** a versioned, tool-neutral format, produced only by the study's
+  compiler and specified in study `docs/gamedata.md`. It would extend
+  `conversation-spec.json` with Kismet and site edits.
+- **Gate walking** stays in the study repo's `gates.ts`. Steps 5 and 7 walk Kismet back
+  from starts, so the line between the two needs drawing.
+- **How UDK is used for LE1 and LE2 conditionals.** The user chose UDK and said LEX or
+  Mod Manager may have tooling for it. Found on 2026-11-25:
+    - Mod Manager has no UDK code of its own, only its LEX submodule.
+    - LEX opens UDK packages, and ports assets, static lighting and materials from UDK
+      into LE packages. Its Lightmass Baker says it needs UDK-2015-02; 2015-01 is
+      installed.
+    - When LEX ports a function across games, UDK included, it decompiles it and
+      recompiles it with LEC's compiler (`Relinker.cs`). It never copies UDK's bytecode
+      into an LE package, and gives UDK its own native table.
+    - UDK has none of the games' classes (`BioWorldInfo`, the variable table), so
+      compiling a conditional there needs stub classes.
+    - Still open: whether UDK's bytecode for the subset below matches the game's after
+      relinking names and objects, or whether UDK only checks the text and our own
+      compiler writes the bytes.
+- **Base-game overrides** ship as `.pmu` text (decided above): Plot Manager Sync rewrites
+  the base `PlotManager.pcc` from a vanilla copy and the installed mods' `.pmu` text on
+  every install and delete (study `docs/modding.md`). New ids can go in a mod's own class.
+    - Sync also adds an id the vanilla file lacks, by cloning a function export
+      (`PlotManagerMerge.cs`, about line 140). Not yet proven in game.
+    - Sync rewrites only the base file, but some ids are defined in DLC packages, each in
+      its own `BioAutoConditionals` class. Counted from the study's exports (2026-11-18):
+        - LE1: 71 of 1,137 ids, in `PlotManagerDLC_UNC.pcc` (Bring Down the Sky).
+        - LE2: 343 of 1,699, in 11 DLC `Startup_*_INT.pcc` packages. The largest are
+          Kasumi (70), `EXP_Part01` (56) and `UNC_Pack01` (54).
+        - No id is defined twice, so in vanilla no two definitions compete.
+    - Open: a `.pmu` override of a DLC-defined id puts an `F<id>` in the base class while
+      the DLC's class still defines it, and the class order decides which one runs. Test
+      once per game in game, together with the proof for new ids.
+
+### The LE1 and LE2 conditional subset (measured 2026-11-25)
+
+From the decompiled text in the study's exports, 1,137 in LE1 and 1,699 in LE2:
+
+- None has an `if`, a loop or a `switch`. Nearly all declare a local and return one
+  expression.
+- The only calls on a local or parameter are `GetGlobalVariables`,
+  `GetLocalIntegerVariable` and `GetLocalBoolVariable` on the world, and `GetBool`,
+  `GetInt` and `GetFloat` on the variable table.
+- The exports hold each one's bytecode, so a compiler can be tested against all 2,836.
+  Comparing needs the package's own names and objects, which the bytecode refers to by
+  index.
 
 ## Review
 
