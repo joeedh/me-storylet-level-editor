@@ -1,8 +1,8 @@
 # Milestone 1: package round trip and one unvoiced LE3 conversation
 
-Status: pressure-tested and revised, 2026-11-25 (see "Review"). Step 0 is done apart
-from the dump command, which is being built: the game loads an uncompressed level. Step 1
-is done.
+Status: pressure-tested and revised, 2026-11-25 (see "Review"). Steps 0 and 1 are done:
+the game loads an uncompressed level, and the dump settled which classes store file
+offsets. The dump command waits in an exporter worktree for the user's go-ahead.
 
 ## Goal
 
@@ -48,8 +48,9 @@ played in game.
   `stage: owner`, with diagnostic bools. Played on `Save_0038` (study
   `docs/plans/2026-11-21-tali-conversation.md`). The built level's sha256 starts
   `b5c17671`.
-- **`changes/legion-ceasefire.yaml`:** spliced `beforeStart`, `stage: copy`, with
-  transition 9000 on reply 9001402. Played on `Save_0032` (study
+- **`changes/legion-ceasefire.yaml`:** host `BioD_Nor_204Gth.pcc` in `DLC_METR_Patch01`
+  (the copy the game loads, not the base game's), spliced `beforeStart`, `stage: copy`,
+  with transition 9000 on reply 9001402. Played on `Save_0032` (study
   `docs/plans/2026-11-24-legion-scene-transition.md`). Its built level isn't kept, so step
   0 rebuilds it.
 - **Neither case covers:** a node with no bool, no diagnostics, given face sets,
@@ -110,13 +111,26 @@ On the two hosts and their `_LOC_INT` templates:
   dropping the chunk table.
 - An unedited round trip never moves an offset: the uncompressed header is 142 bytes, the
   same as where the compressed file's chunks start.
-- **Offsets that binary data records,** and which move once an edit grows the tables:
-    - `ShaderCache`: LEC fixes these (`MEPackage.cs:1303`).
-    - `Texture2D` mips stored in the package: 6 absolute offsets per texture (4 textures
-      in `405Engineering`, 78 in `204Gth`). LEC fixes these only for ME1
-      (`MEPackage.cs:1274`). The builder's Tali level has them stale, and it played.
-    - Possibly `SkeletalMesh`, `StaticMesh`, `WwiseBank` and FaceFX bulk data: a
-      heuristic scan found them, unconfirmed.
+- **Offsets that binary data records,** and which move once an edit grows the tables.
+  Settled by the dump (step 0), on both hosts, both copies of `204Gth` and the three
+  `_LOC_INT` packages:
+    - **`ShaderCache`:** LEC's save fixes most (`MEPackage.cs:1303`; 89 in
+      `405Engineering`), but not the `FVertexFactoryParameterRef` end offsets inside
+      shaders (`Shaders/VertexFactories.cs`): 37 more in `405Engineering`, 1,389 in
+      `204Gth`. The base game's `204Gth` has no ShaderCache.
+    - **Inline bulk data** (flags, count, size on disk, offset in file):
+        - `Texture2D` mips: 19 in `405Engineering`, 519 in `204Gth`. LEC fixes them only
+          for ME1 (`MEPackage.cs:1274`).
+        - `SkeletalMesh`: 1–3 records per mesh (3 in `405Engineering`, 16 in `204Gth`).
+        - `StaticMesh`: 1 in `204Gth` and in each `_LOC_INT`.
+        - `WwiseBank`: 1 per bank, in the `_LOC_INT` packages only.
+    - **FaceFX is cleared,** and so are the other heuristic hits (`AnimSequence`, shader
+      bytecode, small counts in `Material`, `BioConversation`, `SeqAct_Interp`): the
+      same export at a different data offset in another vanilla copy never had them
+      move. Every confirmed kind moved.
+    - **LEC leaves them stale:** Tali's baseline has 59 stale offsets, Legion's 1,925.
+      Both played.
+    - No `WwiseStream` or `TextureMovie` data is stored in these packages.
 - **Schemas:** every class and struct the builder creates is defined in
   `CookedPCConsole\SFXGame.pcc` or `Engine.pcc`, with a default object. Struct
   inheritance must be walked (`BioDialogEntryNode` and `BioDialogReplyNode` extend
@@ -128,9 +142,11 @@ On the two hosts and their `_LOC_INT` templates:
 
 - **Output is uncompressed.** Step 0 showed the game loads an uncompressed level as it
   does a compressed one.
-- **Offsets:** every confirmed kind is fixed (`ShaderCache` and `Texture2D` first), so the
-  file is correct rather than matching LEC's stale values. A class with offsets the tool
-  can't fix yet stops the write, naming the export. Comparisons mask the fixed fields.
+- **Offsets:** every confirmed kind is fixed (`ShaderCache` with its vertex-factory
+  offsets, and the bulk data of `Texture2D`, `SkeletalMesh`, `StaticMesh` and
+  `WwiseBank`), so the file is correct rather than matching LEC's stale values. A class
+  with offsets the tool can't fix yet stops the write, naming the export. Comparisons
+  mask the fixed fields.
 - **Properties are written in the class's property order,** as the engine writes them, not
   in LEC's insertion order. The byte test is against vanilla, not against LEC: every
   vanilla export of the builder's classes, read and re-serialised, must come out
@@ -166,6 +182,12 @@ On the two hosts and their `_LOC_INT` templates:
       2026-11-24), so the plot writes weren't compared. Output is uncompressed.
     - **Dumps.** A read-only `dump` command in `me-gamedata-export`: a package's tables,
       properties and binary offsets, to compare with.
+      Built 2026-11-25, in the worktree `me-gamedata-export-dump` (branch `dump`), not yet
+      merged: `GameDataExport dump le3 <game dir> <package> <out.json>`. Dumps of the
+      eleven packages are in `build/dumps/`, each byte-identical when run twice. LEC
+      parsed every export, and its binary parsers round-trip every vanilla export
+      exactly. Tali's compressed baseline and its uncompressed copy differ only in the
+      header's compression fields and the file layout, with no offset moved.
 1. **Build setup:** CMake 3.25 and C++20, like coredcc, with coredcc pinned to a commit.
    A test target runnable by `ctest`, using coredcc's test framework if it fits. Whether
    this tool builds without exceptions and RTTI, as coredcc does when it owns the build,
@@ -195,8 +217,9 @@ On the two hosts and their `_LOC_INT` templates:
       the same byte checks. The study's ME2 route needs LE2 writes early. Not needed to
       finish this milestone.
 4. **Shifted round trip:** add one name and one empty export, so every offset moves. Check
-   the `ShaderCache` and `Texture2D` offsets against their exports' new positions, and
-   against LEC's save of the same edit for `ShaderCache`.
+   every confirmed offset against its export's new position, at the positions the dump
+   lists. LEC's save of the same edit is a second check only for the `ShaderCache`
+   offsets it fixes.
 5. **Edits through coredcc:** adding names, imports and exports, and setting properties,
    are commands. Undoing every command gives back step 3's bytes, for both cases' full
    edit lists.
@@ -243,8 +266,9 @@ On the two hosts and their `_LOC_INT` templates:
 
 ## Open questions
 
-- **The heuristic offset hits** (`SkeletalMesh`, `StaticMesh`, `WwiseBank`, FaceFX).
-  Step 2 confirms or clears each, and the write refuses any it can't fix.
+- **Settled by the dump (2026-11-25):** the heuristic offset hits. `SkeletalMesh`,
+  `StaticMesh` and `WwiseBank` store offsets; FaceFX doesn't. The write still refuses a
+  class it doesn't know to be free of offsets.
 - **Whether coredcc's document model fits package edits.** The reviewer read only its
   command and undo API. Step 5 finds out.
 - **One writer per package per build:** the TLK, `.cnd` and transition builders write
