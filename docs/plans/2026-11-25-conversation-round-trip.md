@@ -1,7 +1,7 @@
 # Milestone 1: package round trip and one unvoiced LE3 conversation
 
 Status: pressure-tested and revised, 2026-11-25 (see "Review"). No code exists. Step 0
-is approved.
+is done apart from the dump command: the game loads an uncompressed level.
 
 ## Goal
 
@@ -125,8 +125,8 @@ On the two hosts and their `_LOC_INT` templates:
 
 ## Design choices
 
-- **Output is uncompressed,** if step 0 shows the game loads it; otherwise compressed
-  writing, through the game's Oodle DLL, joins this milestone.
+- **Output is uncompressed.** Step 0 showed the game loads an uncompressed level as it
+  does a compressed one.
 - **Offsets:** every confirmed kind is fixed (`ShaderCache` and `Texture2D` first), so the
   file is correct rather than matching LEC's stale values. A class with offsets the tool
   can't fix yet stops the write, naming the export. Comparisons mask the fixed fields.
@@ -157,6 +157,12 @@ On the two hosts and their `_LOC_INT` templates:
     - The uncompressed copy for the in-game check is LEC's save of Tali's baseline,
       `build/baselines/talitalks/uncompressed/` (sha256 `12ed2ca6`). LEC changed no
       export data, name or import, and cleared the compression flag.
+    - Installed 2026-11-25 as the library mod `talitalksuncompressed` (a copy of
+      `talitalks` with only the level replaced), with Mod Manager's `--installmod`.
+      Mod Manager left the uncompressed level hash-identical.
+    - **Result, 2026-11-25:** the user played it on `Save_0038`, and it behaved the same
+      as the compressed level. PlotHarness wrote no log that run (its last entry is from
+      2026-11-24), so the plot writes weren't compared. Output is uncompressed.
     - **Dumps.** A read-only `dump` command in `me-gamedata-export`: a package's tables,
       properties and binary offsets, to compare with.
 1. **Build setup:** CMake 3.25 and C++20, like coredcc, with coredcc pinned to a commit.
@@ -200,7 +206,7 @@ On the two hosts and their `_LOC_INT` templates:
 
 ## Done when
 
-- **In-game load:** step 0 has settled whether the output is compressed.
+- **In-game load:** settled on 2026-11-25: the game loads an uncompressed level.
 - **Round trip:** both hosts and both templates write back byte-equal in data and tables,
   both hosts load in game, and the shifted round trip has correct offsets.
 - **Properties:** every vanilla export of the builder's classes in both hosts
@@ -215,14 +221,12 @@ On the two hosts and their `_LOC_INT` templates:
 - TLK strings, `.cnd` files and transitions: the interim builders keep writing them.
 - LE1, LE2 conversations and conditionals. LE2 reading and writing may start (step 3).
 - Voiced lines, cinematics, and the visit query.
-- Writing compressed packages, unless step 0 needs it.
+- Writing compressed packages: step 0 showed they aren't needed.
 - The scene format's new needs (several speakers, gendered text, conditions on links):
   the writer reads today's spec here, and the scene format extends it later.
 
 ## Open questions
 
-- **Does Mod Manager leave an uncompressed file as it is** on install? Its records show it
-  kept compressed files hash-identical. Checked in step 0.
 - **The heuristic offset hits** (`SkeletalMesh`, `StaticMesh`, `WwiseBank`, FaceFX).
   Step 2 confirms or clears each, and the write refuses any it can't fix.
 - **Whether coredcc's document model fits package edits.** The reviewer read only its
@@ -239,7 +243,7 @@ source.
 
 | #   | Finding                                                                                  | Resolution                                                       |
 | --- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1   | LEC compresses LE saves by default; no uncompressed level has been played                | Step 0 tests it in game; compressed writing if it fails          |
+| 1   | LEC compresses LE saves by default; no uncompressed level has been played                | Step 0: the game loads it (2026-11-25)                           |
 | 2   | An unedited round trip moves no offset, so the offset check couldn't fail                | Step 4, a shifted round trip                                     |
 | 3   | `ShaderCache` and `Texture2D` record absolute offsets; LEC leaves `Texture2D` stale       | Fix every confirmed kind; refuse unknown ones; mask in compares  |
 | 4   | New objects' defaults are LEC's selection plus a version table, not the class defaults   | "What the builder does" lists the rules; the writer copies them  |
