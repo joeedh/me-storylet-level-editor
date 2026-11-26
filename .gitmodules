@@ -1,0 +1,3 @@
+[submodule "extern/coredcc"]
+	path = extern/coredcc
+	url = https://github.com/joeedh/coredcc.git

@@ -1,7 +1,8 @@
 # Milestone 1: package round trip and one unvoiced LE3 conversation
 
-Status: pressure-tested and revised, 2026-11-25 (see "Review"). No code exists. Step 0
-is done apart from the dump command: the game loads an uncompressed level.
+Status: pressure-tested and revised, 2026-11-25 (see "Review"). Step 0 is done apart
+from the dump command, which is being built: the game loads an uncompressed level. Step 1
+is done.
 
 ## Goal
 
@@ -169,6 +170,21 @@ On the two hosts and their `_LOC_INT` templates:
    A test target runnable by `ctest`, using coredcc's test framework if it fits. Whether
    this tool builds without exceptions and RTTI, as coredcc does when it owns the build,
    is decided here.
+   Done 2026-11-25:
+    - **No exceptions and no RTTI** in every target, coredcc and litestl included (the
+      user agreed, 2026-11-25). coredcc leaves the choice to its host, and off is the only
+      setting its tests run with. The flags have to agree across translation units, so
+      they are set once, before coredcc is added.
+    - **coredcc** is a submodule at `extern/coredcc`, pinned to `c680c75` (its master,
+      pushed). `melevel version` prints the pinned commit.
+    - **Tests** use litestl's harness through coredcc's test support. It fits: one
+      executable per test, under `ctest`.
+    - **`ue3` has its own `Status` and `Result<T>`** (`source/ue3/result.h`), since it
+      doesn't depend on coredcc. An error carries text, with context added by each layer.
+    - **The CLI is `melevel`:** one JSON document per command, errors as
+      `{"error": {"message": ...}}` with exit code 1. Only `version` exists.
+    - **Presets** `native-clang` and `native-msvc`, debug and release, built through
+      coredcc's `devshell.cmd`. All four build and pass the 4 tests.
 2. **Read LE3 packages:** the header, Oodle chunks, the name, import and export tables,
    tagged properties, and class schemas from `SFXGame.pcc` and `Engine.pcc`. Compare
    with the LEC dump of both hosts and both templates.

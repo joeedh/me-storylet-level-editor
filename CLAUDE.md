@@ -53,9 +53,6 @@ It owns writing mods (the user's decisions, 2026-11-24 and 2026-11-25):
 
 Until each writer exists, `me-gamedata-export`'s builders do that job.
 
-There is no code yet, and the build setup isn't planned. Replace this section with
-build/test commands and an architecture overview once they exist.
-
 - **Current plan:** `docs/plans/2026-11-25-conversation-round-trip.md`, milestone 1: an
   LE3 package read and write round trip ending in one unvoiced conversation. LE2 comes
   next (the user's decisions, 2026-11-25).
@@ -63,6 +60,34 @@ build/test commands and an architecture overview once they exist.
   and the other later milestones it lists.
 - **Layers planned:** `ue3` → `level` → `kismet` → `app` → CLI. `ue3` doesn't depend on
   coredcc.
+
+### Layout
+
+- `source/<layer>/`, include root `source/`. So far:
+    - `ue3/`: packages. `result.h` is its error type (`Status`, `Result<T>`, `UE3_TRY`),
+      since `ue3` can't use coredcc's.
+    - `cli/`: `melevel`. Every command prints one JSON document; errors are
+      `{"error": {"message": ...}}` with exit code 1.
+- `extern/coredcc/`: coredcc as a submodule, pinned to a commit. Its own submodule is
+  litestl. Clone with `--recursive`, or run `git submodule update --init --recursive`.
+- `tests/`: one executable per test on litestl's harness (`test_init`, `test_assert`,
+  `return test_end()`), registered with `melevel_test` (`cmake/MelevelHelpers.cmake`).
+- **No exceptions and no RTTI,** in every target, coredcc and litestl included (the
+  user's decision, 2026-11-25). Use the `error_code` overloads of `std::filesystem` and
+  `std::from_chars`, never anything that reports failure by throwing.
+- Our targets build with `/W4 /WX`.
+
+### Build and test
+
+Through coredcc's `extern\coredcc\tools\devshell.cmd`, which loads the Visual Studio 18
+environment (from Git Bash, set `MSYS_NO_PATHCONV=1`, or use PowerShell). Presets are
+`native-clang` (clang-cl) and `native-msvc`, Ninja Multi-Config, with `-debug` and
+`-release` (RelWithDebInfo) build and test presets. Output goes to `build/<preset>/`.
+
+- Configure: `extern\coredcc\tools\devshell.cmd cmake --preset native-clang`
+- Build: `extern\coredcc\tools\devshell.cmd cmake --build --preset native-clang-debug`
+- Test: `extern\coredcc\tools\devshell.cmd ctest --preset native-clang-debug`
+- Before committing code, build and test all four presets.
 
 ## Related repos
 
